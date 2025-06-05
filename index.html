@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Tarjetas de Crédito y Datos Personales</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e0f7fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            animation: fadeIn 1s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            animation: slideIn 0.5s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        h1 {
+            color: #00796b;
+            margin-bottom: 20px;
+        }
+
+        .fluorescent {
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 15px #00ff00;
+            cursor: pointer;
+        }
+
+        .dev-info {
+            background-color: #000;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #00796b;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: #004d40;
+            outline: none;
+        }
+
+        button {
+            background-color: #00796b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #004d40;
+        }
+
+        .tarjeta {
+            margin: 5px 0;
+            font-weight: bold;
+            color: #00796b;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab {
+            display: none;
+        }
+
+        .tab.active {
+            display: block;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
+        .tabs button {
+            background-color: #00796b;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .tabs button.active {
+            background-color: #004d40;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="dev-info" onclick="window.open('https://t.me/Retry404', '_blank')">
+            Dev_by: <span class="fluorescent">@Retry404</span>
+        </div>
+        <h1>Generador de Tarjetas</h1>
+        <div class="tabs">
+            <button class="tab-link active" onclick="showTab('tarjetas')">Tarjetas</button>
+            <button class="tab-link" onclick="showTab('datos')">Datos Personales</button>
+        </div>
+
+        <div id="tarjetas" class="tab active">
+            <input type="text" id="numeroBase" placeholder="Ingrese el número base (ej: 511054011046xxxx)" />
+            <input type="number" id="cantidadTarjetas" placeholder="Cantidad de tarjetas (mínimo 10)" min="10" value="10" />
+            
+            <select id="mesCaducidad">
+                <option value="">Seleccionar mes de caducidad (opcional)</option>
+                <option value="01">Enero (01)</option>
+                <option value="02">Febrero (02)</option>
+                <option value="03">Marzo (03)</option>
+                <option value="04">Abril (04)</option>
+                <option value="05">Mayo (05)</option>
+                <option value="06">Junio (06)</option>
+                <option value="07">Julio (07)</option>
+                <option value="08">Agosto (08)</option>
+                <option value="09">Septiembre (09)</option>
+                <option value="10">Octubre (10)</option>
+                <option value="11">Noviembre (11)</option>
+                <option value="12">Diciembre (12)</option>
+            </select>
+
+            <select id="anioCaducidad">
+                <option value="">Seleccionar año de caducidad (opcional)</option>
+            </select>
+
+            <input type="text" id="cvv" placeholder="Ingrese CVV (opcional)" maxlength="3" />
+            <button onclick="generarTarjetas()">Generar Tarjetas</button>
+            <button onclick="copiarResultados()">Copiar Resultados</button>
+            <div id="resultado"></div>
+        </div>
+
+        <div id="datos" class="tab">
+            <select id="pais">
+                <option value="US" selected>Estados Unidos</option>
+                <option value="CA">Canadá</option>
+                <option value="AU">Australia</option>
+            </select>
+            <button onclick="generarDatos()">Generar Datos Personales</button>
+            <div id="resultadoDatos"></div>
+        </div>
+    </div>
+
+    <script>
+        const anioActual = new Date().getFullYear();
+        const anioCaducidadSelect = document.getElementById('anioCaducidad');
+        for (let i = anioActual; i <= 2035; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i;
+            anioCaducidadSelect.appendChild(option);
+        }
+
+        const nombresMasculinos = [
+            "Aarav", "Aaron", "Abel", "Abraham", "Adam", "Adrian", "Aidan", "Aiden", "Alan", "Albert", "Alec", "Alexander", "Alfred", "Ali", "Aiden", "Alvin", "Anderson", "Andres", "Andrew", "Anthony", "Antonio", "Asher", "Austin", "Avery", "Bailey", "Benjamin", "Blake", "Bobby", "Bradley", "Brandon", "Brian", "Bruce", "Bryan", "Caleb", "Cameron", "Carl", "Carlos", "Carter", "Charles", "Christopher", "Cody", "Cole", "Colin", "Connor", "Daniel", "David", "Derek", "Dominic", "Donald", "Dylan", "Eli", "Elijah", "Ethan", "Evan", "Felix", "Finn", "Gabriel", "Gage", "Gavin", "George", "Graham", "Grant", "Grayson", "Gregory", "Harrison", "Henry", "Hugo", "Isaac", "Isaiah", "Jack", "Jacob", "James", "Jason", "Jasper", "Jayden", "Jeffrey", "Jesse", "John", "Jonathan", "Jordan", "Joseph", "Joshua", "Julian", "Justin", "Kevin", "Liam", "Logan", "Lucas", "Luke", "Mason", "Matthew", "Michael", "Nathan", "Nicholas", "Noah", "Oliver", "Owen", "Patrick", "Paul", "Peter", "Quinn", "Rafael", "Raymond", "Richard", "Robert", "Ryan", "Samuel", "Santiago", "Sebastian", "Simon", "Stephen", "Tanner", "Thomas", "Timothy", "Tobias", "Victor", "Vincent", "William", "Zachary"
+        ];
+
+        const nombresFemeninos = [
+            "Aaliyah", "Abigail", "Addison", "Adeline", "Adriana", "Alaina", "Alexa", "Alice", "Alyssa", "Amara", "Amelia", "Ana", "Anastasia", "Angela", "Anna", "Ariana", "Ashley", "Aubrey", "Audrey", "Autumn", "Bailey", "Bella", "Brianna", "Brooklyn", "Camila", "Caroline", "Charlotte", "Chloe", "Claire", "Clara", "Cora", "Daisy", "Daniela", "Daphne", "Delilah", "Destiny", "Ella", "Emily", "Emma", "Erin", "Eva", "Faith", "Fiona", "Gabriella", "Grace", "Hailey", "Hannah", "Harper", "Hazel", "Isabella", "Isla", "Ivy", "Jade", "Jasmine", "Jessica", "Jordan", "Julia", "Kaitlyn", "Katherine", "Kayla", "Keira", "Kylie", "Laila", "Layla", "Leah", "Lila", "Lily", "Lucy", "Mackenzie", "Madeline", "Madison", "Maya", "Mia", "Mila", "Naomi", "Natalie", "Nora", "Olivia", "Penelope", "Piper", "Rachel", "Reagan", "Riley", "Rose", "Ruby", "Samantha", "Sarah", "Savannah", "Scarlett", "Sienna", "Sophia", "Stella", "Tessa", "Victoria", "Violet", "Willow", "Zoe"
+        ];
+
+        function reemplazarXPorNumeros(numero) {
+            return numero.replace(/x/g, () => Math.floor(Math.random() * 10));
+        }
+
+        function validarTarjetaCredito(numero) {
+            let suma = 0;
+            let alt = false;
+            for (let i = numero.length - 1; i >= 0; i--) {
+                let d = parseInt(numero[i], 10);
+                if (alt) {
+                    d *= 2;
+                    if (d > 9) d -= 9;
+                }
+                suma += d;
+                alt = !alt;
+            }
+            return suma % 10 === 0;
+        }
+
+        function generarCVV() {
+            return Math.floor(100 + Math.random() * 900); // Genera un CVV aleatorio entre 100 y 999
+        }
+
+        function generarTarjetas() {
+            const numeroBase = document.getElementById('numeroBase').value;
+            const cantidad = Math.max(10, parseInt(document.getElementById('cantidadTarjetas').value)) || 10; // Asegurarse de que sea al menos 10
+            const mesSeleccionado = document.getElementById('mesCaducidad').value;
+            const anioSeleccionado = document.getElementById('anioCaducidad').value;
+            const cvvInput = document.getElementById('cvv').value;
+            const resultadoDiv = document.getElementById('resultado');
+            resultadoDiv.innerHTML = ''; // Limpiar resultados anteriores
+
+            let tarjetasGeneradas = 0; // Contador de tarjetas generadas
+
+            while (tarjetasGeneradas < cantidad) {
+                let numeroGenerado = reemplazarXPorNumeros(numeroBase);
+                if (validarTarjetaCredito(numeroGenerado)) {
+                    let mesCaducidad = mesSeleccionado || String(Math.floor(Math.random() * 12) + 1).padStart(2, '0'); // Generar mes aleatorio si no se selecciona
+                    let anioCaducidad = anioSeleccionado || (anioActual + Math.floor(Math.random() * (2035 - anioActual + 1))); // Generar año aleatorio si no se selecciona
+                    let cvv = cvvInput || generarCVV(); // Usar CVV ingresado o generar uno aleatorio
+
+                    resultadoDiv.innerHTML += `${numeroGenerado}|${mesCaducidad}|${anioCaducidad}|${cvv}<br>`;
+                    tarjetasGeneradas++; // Incrementar contador de tarjetas generadas
+                }
+            }
+        }
+
+        function copiarResultados() {
+            const resultadoDiv = document.getElementById('resultado');
+            const resultadosTexto = resultadoDiv.innerText; // Obtener el texto de los resultados
+
+            // Usar la API de Clipboard para copiar el texto
+            navigator.clipboard.writeText(resultadosTexto).then(() => {
+                alert("Resultados copiados al portapapeles!");
+            }).catch(err => {
+                console.error('Error al copiar: ', err);
+            });
+        }
+
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('.tab');
+            const tabLinks = document.querySelectorAll('.tab-link');
+
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            tabLinks.forEach(link => {
+                link.classList.remove('active');
+            });
+
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`.tab-link[onclick="showTab('${tabName}')"]`).classList.add('active');
+        }
+
+        function generarDatos() {
+            const pais = document.getElementById('pais').value;
+            const nombre = generarNombre();
+            const apellido = generarApellido();
+            const email = generarEmail(nombre, apellido);
+            const username = generarUsername(nombre, apellido);
+            const contrasena = generarContrasena();
+            const phoneNumber = generarTelefono(pais);
+
+            const resultadoDiv = document.getElementById('resultadoDatos');
+            resultadoDiv.innerHTML = `
+                Nombre: ${nombre}<br>
+                Apellido: ${apellido}<br>
+                Email: ${email}<br>
+                Username: ${username}<br>
+                Contraseña: ${contrasena}<br>
+                Número de Teléfono: ${phoneNumber}<br>
+            `;
+        }
+
+        function generarNombre() {
+            return nombresMasculinos[Math.floor(Math.random() * nombresMasculinos.length)];
+        }
+
+        function generarApellido() {
+            return nombresFemeninos[Math.floor(Math.random() * nombresFemeninos.length)];
+        }
+
+        function generarEmail(nombre, apellido) {
+            const domains = ["gmail.com", "hotmail.com", "yahoo.com", "outlook.com"];
+            return `${nombre.toLowerCase()}.${apellido.toLowerCase()}@${domains[Math.floor(Math.random() * domains.length)]}`;
+        }
+
+        function generarUsername(nombre, apellido) {
+            return `${nombre.toLowerCase()}${apellido.charAt(0).toLowerCase()}${Math.floor(Math.random() * 1000)}`;
+        }
+
+        function generarContrasena() {
+            const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+            let contrasena = "";
+            for (let i = 0; i < 12; i++) {
+                contrasena += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+            }
+            return contrasena;
+        }
+
+        function generarTelefono(pais) {
+            if (pais === "US" || pais === "CA") {
+                return `+1 ${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}-${Math.floor(1000 + Math.random() * 9000)}`;
+            } else if (pais === "AU") {
+                return `+61 ${Math.floor(4)} ${Math.floor(10000000 + Math.random() * 90000000)}`;
+            }
+        }
+    </script>
+
+</body>
+</html>
