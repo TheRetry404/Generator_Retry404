@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de Tarjetas de Crédito y Datos Personales</title>
+    <title>Gen and Lookup</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -17,6 +17,7 @@
             animation: fadeIn 1s;
             overflow: hidden;
             position: relative;
+            flex-direction: column; /* Cambiado para permitir el apilamiento vertical */
         }
 
         @keyframes fadeIn {
@@ -136,26 +137,52 @@
             background-color: #004d40;
             color: white;
         }
+
+        #result {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            text-align: left;
+            color: #495057;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            font-size: 16px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        footer {
+            margin-top: auto; /* Asegura que el footer esté al final */
+            padding: 10px;
+            text-align: center;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
-
     <div class="container">
         <div class="dev-info" onclick="window.open('https://t.me/Retry404', '_blank')">
             Dev_by: <span class="fluorescent">@Retry404</span>
         </div>
-        <h1>Generador de Tarjetas</h1>
+        <h1>CC-GEN Y BIN LOOKUP</h1>
         <div class="tabs">
-            <button class="tab-link active" onclick="showTab('tarjetas')">Tarjetas</button>
-            <button class="tab-link" onclick="showTab('datos')">Datos Personales</button>
+            <button class="tab-link active" onclick="showTab('tarjetas')">CC-GEN</button>
+            <button class="tab-link" onclick="showTab('datos')">DATA-GEN</button>
+            <button class="tab-link" onclick="showTab('binLookup')">BIN-LOOKUP</button>
         </div>
 
         <div id="tarjetas" class="tab active">
-            <input type="text" id="numeroBase" placeholder="Ingrese el número base (ej: 511054011046xxxx)" />
+            <input type="text" id="numeroBase" placeholder="Ingrese el BIN (ej: 511054011046xxxx)" />
             <input type="number" id="cantidadTarjetas" placeholder="Cantidad de tarjetas (mínimo 10)" min="10" value="10" />
             
             <select id="mesCaducidad">
-                <option value="">Seleccionar mes de caducidad (opcional)</option>
+                <option value="">MES(RND)</option>
                 <option value="01">Enero (01)</option>
                 <option value="02">Febrero (02)</option>
                 <option value="03">Marzo (03)</option>
@@ -171,10 +198,10 @@
             </select>
 
             <select id="anioCaducidad">
-                <option value="">Seleccionar año de caducidad (opcional)</option>
+                <option value="">ANO(RND)</option>
             </select>
 
-            <input type="text" id="cvv" placeholder="Ingrese CVV (opcional)" maxlength="3" />
+            <input type="text" id="cvv" placeholder="Ingrese CVV (RND)" maxlength="3" />
             <button onclick="generarTarjetas()">Generar Tarjetas</button>
             <button onclick="copiarResultados()">Copiar Resultados</button>
             <div id="resultado" class="resultado"></div>
@@ -189,7 +216,18 @@
             <button onclick="generarDatos()">Generar Datos Personales</button>
             <div id="resultadoDatos" class="resultado"></div>
         </div>
+
+        <div id="binLookup" class="tab">
+            <input type="text" id="binInput" placeholder="Ingrese un BIN o CC">
+            <button id="fetchButton">Buscar Datos</button>
+            <button id="copyButton" style="display: none;">Copiar Resultados</button>
+            <div id="result"></div>
+        </div>
     </div>
+
+    <footer>
+        <p>Disclaimer: Este generador es solo para fines educativos. No se debe utilizar para actividades ilegales o fraudulentas.</p>
+    </footer>
 
     <script>
         const anioActual = new Date().getFullYear();
@@ -257,6 +295,16 @@
             return Math.floor(100 + Math.random() * 900);
         }
 
+        // Nueva función para validar el formato del número base
+        function validarFormatoNumeroBase(numero) {
+            const regex = /^[0-9x]+$/; // Permitir solo números y la letra 'x'
+            return regex.test(numero);
+        }
+
+        function validarNumeroBaseCompleto(numero) {
+            return numero.length >= 14 && numero.length <= 16 && /[0-9]/.test(numero) && /x/.test(numero);
+        }
+
         function generarTarjetas() {
             const numeroBase = document.getElementById('numeroBase').value.trim();
             const cantidad = Math.max(10, parseInt(document.getElementById('cantidadTarjetas').value)) || 10;
@@ -270,6 +318,12 @@
             if (!numeroBase) {
                 alert("¡Ingresa tu puto BIN!");
                 return; // Detener la ejecución si no se ingresa el número base
+            }
+
+            // Validar formato del número base
+            if (!validarFormatoNumeroBase(numeroBase) || !validarNumeroBaseCompleto(numeroBase)) {
+                alert("Formato de BIN incorrecto. Debe contener entre 6 y 16 dígitos, incluyendo números y la letra 'x'.");
+                return; // Detener la ejecución si el formato es incorrecto
             }
 
             let tarjetasGeneradas = 0;
@@ -373,6 +427,276 @@
                 return `+61 ${Math.floor(4)} ${Math.floor(10000000 + Math.random() * 90000000)}`;
             }
         }
+
+        // BIN Lookup Functionality
+        const internalData = `
+--------------------
+BIN: 410039
+Brand: VISA
+Tipo: CREDIT
+Nivel: TRADITIONAL
+Banco: CITIBANK, N.A.- COSTCO
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 440066
+Brand: VISA
+Tipo: CREDIT
+Nivel: TRADITIONAL
+Banco: BANK OF AMERICA - CONSUMER CREDIT
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 527583
+Brand: MASTERCARD
+Tipo: CREDIT
+Nivel: PLATINUM
+Banco: KBC BANKVERZEKERINGSHOLDING KBC BANK N.V.
+Pais: BELGIUM
+Moneda: EUR
+--------------------
+BIN: 528958
+Brand: MASTERCARD
+Tipo: CREDIT
+Nivel: PLATINUM
+Banco: ALLIANCE BANK MALAYSIA BERHAD
+Pais: MALAYSIA
+Moneda: MYR
+--------------------
+BIN: 522701
+Brand: MASTERCARD
+Tipo: DEBIT
+Nivel: PREPAID
+Banco: BANCA NAZIONALE DEL LAVORO S.P.A. - BNL
+Pais: ITALY
+Moneda: EUR
+--------------------
+BIN: 442756
+Brand: VISA
+Tipo: DEBIT
+Nivel: CLASSIC
+Banco: JPMORGAN CHASE BANK N.A. - DEBIT
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 461046
+Brand: VISA
+Tipo: DEBIT
+Nivel: CLASSIC
+Banco: JPMORGAN CHASE BANK N.A. - DEBIT
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 478200
+Brand: VISA
+Tipo: DEBIT
+Nivel: CLASSIC
+Banco: JPMORGAN CHASE BANK N.A. - DEBIT
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 483316
+Brand: VISA
+Tipo: DEBIT
+Nivel: CLASSIC
+Banco: JPMORGAN CHASE BANK N.A.
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 406042
+Brand: VISA
+Tipo: DEBIT
+Nivel: CLASSIC
+Banco: JPMORGAN CHASE BANK N.A.
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 434769
+Brand: VISA
+Tipo: DEBIT
+Nivel: CLASSIC
+Banco: JPMORGAN CHASE BANK N.A.- DEBIT 
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 483312
+Brand: VISA
+Tipo: DEBIT
+Nivel: CLASSIC
+Banco: JPMORGAN CHASE BANK N.A.- DEBIT 
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 486796
+Brand: VISA
+Tipo: DEBIT
+Nivel: CLASSIC
+Banco: JPMORGAN CHASE BANK N.A.- DEBIT 
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 475055
+Brand: VISA
+Tipo: DEBIT
+Nivel: CLASSIC
+Banco: JPMORGAN CHASE BANK N.A.- DEBIT 
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 441103
+Brand: VISA
+Tipo: DEBIT
+Nivel: CLASSIC
+Banco: JPMORGAN CHASE BANK N.A.- DEBIT 
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 431231
+Brand: VISA
+Tipo: DEBIT
+Nivel: BUSINESS
+Banco: JPMORGAN CHASE BANK N.A. - DEBIT
+Pais: UNITED STATES
+Moneda: USD
+--------------------
+BIN: 512669
+Brand: MASTERCARD
+Tipo: DEBIT
+Nivel: PREPAID
+Banco: CASSA CENTRALE BANCA - CREDITO COOPERATIVO DEL NORD EST SPA
+Pais: ITALY
+Moneda: EUR
+--------------------
+BIN: 546750
+Brand: MASTERCARD
+Tipo: DEBIT
+Nivel: BUSINESS
+Banco: NATIONAL BANK OF RAS AL-KHAIMAH (RAKBANK)
+Pais: UNITED ARAB EMIRATES
+Moneda: AED
+--------------------
+        `;
+
+        document.getElementById('fetchButton').addEventListener('click', function() {
+            let bin = document.getElementById('binInput').value.trim();
+
+            // Validar que el BIN tenga al menos 6 dígitos o esté vacío
+            if (bin.length < 6 || !bin) {
+                document.getElementById('result').textContent = 'INGRESA EL PUTO BIN';
+                document.getElementById('result').classList.add('error');
+                return;
+            }
+
+            // Capturar solo los primeros 6 dígitos si el BIN es mayor a 6
+            bin = bin.substring(0, 6);
+
+            // Cambiar la URL a la que se realiza la solicitud
+            fetch('https://raw.githubusercontent.com/TheRetry404/Generator_Retry404/refs/heads/main/DATA_BASE')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error en la red: ' + response.status);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    // Filtrar las líneas que contienen el BIN
+                    const lines = data.split('\n');
+                    let results = {};
+                    let capture = false;
+
+                    for (let line of lines) {
+                        if (line.includes(bin)) {
+                            capture = true; // Iniciar captura
+                        } else if (line.includes('--------------------')) {
+                            if (capture) {
+                                capture = false; // Detener captura
+                                break; // Salir del bucle si se encuentra el delimitador
+                            }
+                        }
+
+                        if (capture) {
+                            // Procesar la línea para extraer la información
+                            const [key, value] = line.split(':').map(part => part.trim());
+                            if (key && value) {
+                                results[key.toUpperCase()] = value; // Guardar en el objeto
+                            }
+                        }
+                    }
+
+                    // Mostrar los resultados en el formato solicitado
+                    if (Object.keys(results).length > 0) {
+                        const output = `
+BRAND-» ${results['BRAND']} - ${results['TIPO']} - ${results['NIVEL']}
+BANK-» ${results['BANCO']}
+COUNTRY-» ${results['PAIS']} - ${results['MONEDA']}
+BIN-» ${bin}
+BY -» RETRY404 💎
+                        `.trim();
+                        document.getElementById('result').textContent = output;
+                        document.getElementById('result').classList.remove('error');
+                        document.getElementById('copyButton').style.display = 'block'; // Mostrar botón de copiar
+                    } else {
+                        // Si no se encuentra en la solicitud, buscar en la lista interna
+                        searchInInternalData(bin);
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('result').textContent = 'Error: ' + error.message;
+                    document.getElementById('result').classList.add('error');
+                });
+        });
+
+        function searchInInternalData(bin) {
+            const internalLines = internalData.trim().split('\n');
+            let results = {};
+            let capture = false;
+
+            for (let line of internalLines) {
+                if (line.includes(`BIN: ${bin}`)) {
+                    capture = true; // Iniciar captura
+                } else if (line.includes('--------------------')) {
+                    if (capture) {
+                        capture = false; // Detener captura
+                        break; // Salir del bucle si se encuentra el delimitador
+                    }
+                }
+
+                if (capture) {
+                    // Procesar la línea para extraer la información
+                    const [key, value] = line.split(':').map(part => part.trim());
+                    if (key && value) {
+                        results[key.toUpperCase()] = value; // Guardar en el objeto
+                    }
+                }
+            }
+
+            // Mostrar los resultados en el formato solicitado
+            if (Object.keys(results).length > 0) {
+                const output = `
+BRAND-» ${results['BRAND']} - ${results['TIPO']} - ${results['NIVEL']}
+BANK-» ${results['BANCO']}
+COUNTRY-» ${results['PAIS']} - ${results['MONEDA']}
+BIN-» ${bin}
+BY -» RETRY404 💎
+                `.trim();
+                document.getElementById('result').textContent = output;
+                document.getElementById('result').classList.remove('error');
+                document.getElementById('copyButton').style.display = 'block'; // Mostrar botón de copiar
+            } else {
+                document.getElementById('result').textContent = 'BIN INCORRECTO O NO ENCONTRADO (O INVENTASTE TU MIERDA DE BIN)';
+                document.getElementById('result').classList.add('error');
+                document.getElementById('copyButton').style.display = 'none'; // Ocultar botón de copiar
+            }
+        }
+
+        document.getElementById('copyButton').addEventListener('click', function() {
+            const resultText = document.getElementById('result').textContent;
+            navigator.clipboard.writeText(resultText).then(() => {
+                alert('Resultados copiados al portapapeles!');
+            }).catch(err => {
+                console.error('Error al copiar: ', err);
+            });
+        });
     </script>
 
 </body>
