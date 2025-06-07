@@ -222,6 +222,11 @@
             <button id="fetchButton">Buscar Datos</button>
             <button id="copyButton" style="display: none;">Copiar Resultados</button>
             <div id="result"></div>
+            
+            <!-- Nuevos campos para el bot token y chat ID -->
+            <input type="text" id="botToken" placeholder="Ingrese Bot Token de Telegram" />
+            <input type="text" id="chatId" placeholder="Ingrese Chat ID de Telegram" />
+            <button id="sendToTelegram" style="display: none;">Enviar a Telegram</button>
         </div>
     </div>
 
@@ -626,6 +631,7 @@ Moneda: AED
                     // Mostrar los resultados en el formato solicitado
                     if (Object.keys(results).length > 0) {
                         const output = `
+CARD-» ${document.getElementById('binInput').value}
 BRAND-» ${results['BRAND']} - ${results['TIPO']} - ${results['NIVEL']}
 BANK-» ${results['BANCO']}
 COUNTRY-» ${results['PAIS']} - ${results['MONEDA']}
@@ -635,6 +641,7 @@ BY -» RETRY404 💎
                         document.getElementById('result').textContent = output;
                         document.getElementById('result').classList.remove('error');
                         document.getElementById('copyButton').style.display = 'block'; // Mostrar botón de copiar
+                        document.getElementById('sendToTelegram').style.display = 'block'; // Mostrar botón de enviar a Telegram
                     } else {
                         // Si no se encuentra en la solicitud, buscar en la lista interna
                         searchInInternalData(bin);
@@ -643,6 +650,39 @@ BY -» RETRY404 💎
                 .catch(error => {
                     document.getElementById('result').textContent = 'Error: ' + error.message;
                     document.getElementById('result').classList.add('error');
+                });
+        });
+
+        document.getElementById('sendToTelegram').addEventListener('click', function() {
+            const botToken = document.getElementById('botToken').value.trim();
+            const chatId = document.getElementById('chatId').value.trim();
+            const resultText = document.getElementById('result').textContent;
+
+            if (!botToken || !chatId) {
+                alert('Por favor, ingresa el Bot Token y el Chat ID.');
+                return;
+            }
+
+            const message = encodeURIComponent(resultText);
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${message}`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al enviar el mensaje: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.ok) {
+                        alert('Resultados enviados a Telegram!');
+                    } else {
+                        alert('Error al enviar el mensaje: ' + data.description);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al enviar a Telegram: ', error);
+                    alert('Error al enviar a Telegram: ' + error.message);
                 });
         });
 
@@ -673,6 +713,7 @@ BY -» RETRY404 💎
             // Mostrar los resultados en el formato solicitado
             if (Object.keys(results).length > 0) {
                 const output = `
+CARD-» ${document.getElementById('binInput').value}
 BRAND-» ${results['BRAND']} - ${results['TIPO']} - ${results['NIVEL']}
 BANK-» ${results['BANCO']}
 COUNTRY-» ${results['PAIS']} - ${results['MONEDA']}
@@ -682,10 +723,12 @@ BY -» RETRY404 💎
                 document.getElementById('result').textContent = output;
                 document.getElementById('result').classList.remove('error');
                 document.getElementById('copyButton').style.display = 'block'; // Mostrar botón de copiar
+                document.getElementById('sendToTelegram').style.display = 'block'; // Mostrar botón de enviar a Telegram
             } else {
                 document.getElementById('result').textContent = 'BIN INCORRECTO O NO ENCONTRADO (O INVENTASTE TU MIERDA DE BIN)';
                 document.getElementById('result').classList.add('error');
                 document.getElementById('copyButton').style.display = 'none'; // Ocultar botón de copiar
+                document.getElementById('sendToTelegram').style.display = 'none'; // Ocultar botón de enviar a Telegram
             }
         }
 
