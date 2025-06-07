@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #e0f7fa;
+            background: linear-gradient(to bottom, #001f3f, #003366);
             margin: 0;
             padding: 0;
             display: flex;
@@ -15,6 +15,8 @@
             align-items: center;
             height: 100vh;
             animation: fadeIn 1s;
+            overflow: hidden;
+            position: relative;
         }
 
         @keyframes fadeIn {
@@ -23,13 +25,15 @@
         }
 
         .container {
-            background-color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.9);
             border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             padding: 20px;
-            width: 300px;
+            width: 600px;
             text-align: center;
             animation: slideIn 0.5s;
+            position: relative;
+            z-index: 1;
         }
 
         @keyframes slideIn {
@@ -57,12 +61,13 @@
         }
 
         input[type="text"], input[type="number"], select {
-            width: 100%;
+            width: calc(100% - 20px);
             padding: 10px;
             border: 2px solid #00796b;
             border-radius: 5px;
             margin-bottom: 20px;
             transition: border-color 0.3s;
+            box-sizing: border-box;
         }
 
         input[type="text"]:focus, input[type="number"]:focus, select:focus {
@@ -86,11 +91,17 @@
             background-color: #004d40;
         }
 
-        .tarjeta {
+        .resultado {
             margin: 5px 0;
             font-weight: bold;
             color: #00796b;
             animation: fadeIn 0.5s;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #00796b;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: left;
         }
 
         .tab {
@@ -105,20 +116,25 @@
             display: flex;
             justify-content: space-around;
             margin-bottom: 20px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            padding: 10px 0;
         }
 
         .tabs button {
-            background-color: #00796b;
-            color: white;
+            background-color: transparent;
+            color: #00796b;
             border: none;
             padding: 10px;
             cursor: pointer;
             flex: 1;
             margin: 0 5px;
+            font-size: 16px;
         }
 
         .tabs button.active {
             background-color: #004d40;
+            color: white;
         }
     </style>
 </head>
@@ -161,7 +177,7 @@
             <input type="text" id="cvv" placeholder="Ingrese CVV (opcional)" maxlength="3" />
             <button onclick="generarTarjetas()">Generar Tarjetas</button>
             <button onclick="copiarResultados()">Copiar Resultados</button>
-            <div id="resultado"></div>
+            <div id="resultado" class="resultado"></div>
         </div>
 
         <div id="datos" class="tab">
@@ -171,7 +187,7 @@
                 <option value="AU">Australia</option>
             </select>
             <button onclick="generarDatos()">Generar Datos Personales</button>
-            <div id="resultadoDatos"></div>
+            <div id="resultadoDatos" class="resultado"></div>
         </div>
     </div>
 
@@ -193,6 +209,31 @@
             "Aaliyah", "Abigail", "Addison", "Adeline", "Adriana", "Alaina", "Alexa", "Alice", "Alyssa", "Amara", "Amelia", "Ana", "Anastasia", "Angela", "Anna", "Ariana", "Ashley", "Aubrey", "Audrey", "Autumn", "Bailey", "Bella", "Brianna", "Brooklyn", "Camila", "Caroline", "Charlotte", "Chloe", "Claire", "Clara", "Cora", "Daisy", "Daniela", "Daphne", "Delilah", "Destiny", "Ella", "Emily", "Emma", "Erin", "Eva", "Faith", "Fiona", "Gabriella", "Grace", "Hailey", "Hannah", "Harper", "Hazel", "Isabella", "Isla", "Ivy", "Jade", "Jasmine", "Jessica", "Jordan", "Julia", "Kaitlyn", "Katherine", "Kayla", "Keira", "Kylie", "Laila", "Layla", "Leah", "Lila", "Lily", "Lucy", "Mackenzie", "Madeline", "Madison", "Maya", "Mia", "Mila", "Naomi", "Natalie", "Nora", "Olivia", "Penelope", "Piper", "Rachel", "Reagan", "Riley", "Rose", "Ruby", "Samantha", "Sarah", "Savannah", "Scarlett", "Sienna", "Sophia", "Stella", "Tessa", "Victoria", "Violet", "Willow", "Zoe"
         ];
 
+        // Direcciones por país
+        const direcciones = {
+            US: [
+                "123 Main St, Springfield, IL, 62701",
+                "456 Elm St, Chicago, IL, 60601",
+                "789 Maple Ave, Los Angeles, CA, 90001",
+                "101 Pine St, New York, NY, 10001",
+                "202 Oak St, Houston, TX, 77001"
+            ],
+            CA: [
+                "123 Queen St, Toronto, ON, M5H 2N2",
+                "456 King St, Vancouver, BC, V5K 0A1",
+                "789 Maple Ave, Calgary, AB, T2P 1J9",
+                "101 Birch St, Ottawa, ON, K1A 0B1",
+                "202 Cedar St, Montreal, QC, H2Y 1A1"
+            ],
+            AU: [
+                "123 George St, Sydney, NSW, 2000",
+                "456 Collins St, Melbourne, VIC, 3000",
+                "789 King St, Brisbane, QLD, 4000",
+                "101 Elizabeth St, Perth, WA, 6000",
+                "202 Flinders St, Adelaide, SA, 5000"
+            ]
+        };
+
         function reemplazarXPorNumeros(numero) {
             return numero.replace(/x/g, () => Math.floor(Math.random() * 10));
         }
@@ -213,38 +254,43 @@
         }
 
         function generarCVV() {
-            return Math.floor(100 + Math.random() * 900); // Genera un CVV aleatorio entre 100 y 999
+            return Math.floor(100 + Math.random() * 900);
         }
 
         function generarTarjetas() {
-            const numeroBase = document.getElementById('numeroBase').value;
-            const cantidad = Math.max(10, parseInt(document.getElementById('cantidadTarjetas').value)) || 10; // Asegurarse de que sea al menos 10
+            const numeroBase = document.getElementById('numeroBase').value.trim();
+            const cantidad = Math.max(10, parseInt(document.getElementById('cantidadTarjetas').value)) || 10;
             const mesSeleccionado = document.getElementById('mesCaducidad').value;
             const anioSeleccionado = document.getElementById('anioCaducidad').value;
             const cvvInput = document.getElementById('cvv').value;
             const resultadoDiv = document.getElementById('resultado');
-            resultadoDiv.innerHTML = ''; // Limpiar resultados anteriores
+            resultadoDiv.innerHTML = '';
 
-            let tarjetasGeneradas = 0; // Contador de tarjetas generadas
+            // Validar si el número base está vacío
+            if (!numeroBase) {
+                alert("¡Ingresa tu puto BIN!");
+                return; // Detener la ejecución si no se ingresa el número base
+            }
+
+            let tarjetasGeneradas = 0;
 
             while (tarjetasGeneradas < cantidad) {
                 let numeroGenerado = reemplazarXPorNumeros(numeroBase);
                 if (validarTarjetaCredito(numeroGenerado)) {
-                    let mesCaducidad = mesSeleccionado || String(Math.floor(Math.random() * 12) + 1).padStart(2, '0'); // Generar mes aleatorio si no se selecciona
-                    let anioCaducidad = anioSeleccionado || (anioActual + Math.floor(Math.random() * (2035 - anioActual + 1))); // Generar año aleatorio si no se selecciona
-                    let cvv = cvvInput || generarCVV(); // Usar CVV ingresado o generar uno aleatorio
+                    let mesCaducidad = mesSeleccionado || String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+                    let anioCaducidad = anioSeleccionado || (anioActual + Math.floor(Math.random() * (2035 - anioActual + 1)));
+                    let cvv = cvvInput || generarCVV();
 
                     resultadoDiv.innerHTML += `${numeroGenerado}|${mesCaducidad}|${anioCaducidad}|${cvv}<br>`;
-                    tarjetasGeneradas++; // Incrementar contador de tarjetas generadas
+                    tarjetasGeneradas++;
                 }
             }
         }
 
         function copiarResultados() {
             const resultadoDiv = document.getElementById('resultado');
-            const resultadosTexto = resultadoDiv.innerText; // Obtener el texto de los resultados
+            const resultadosTexto = resultadoDiv.innerText;
 
-            // Usar la API de Clipboard para copiar el texto
             navigator.clipboard.writeText(resultadosTexto).then(() => {
                 alert("Resultados copiados al portapapeles!");
             }).catch(err => {
@@ -275,6 +321,7 @@
             const username = generarUsername(nombre, apellido);
             const contrasena = generarContrasena();
             const phoneNumber = generarTelefono(pais);
+            const direccion = generarDireccion(pais);
 
             const resultadoDiv = document.getElementById('resultadoDatos');
             resultadoDiv.innerHTML = `
@@ -284,7 +331,13 @@
                 Username: ${username}<br>
                 Contraseña: ${contrasena}<br>
                 Número de Teléfono: ${phoneNumber}<br>
+                Dirección: ${direccion}<br>
             `;
+        }
+
+        function generarDireccion(pais) {
+            const direccionesPais = direcciones[pais];
+            return direccionesPais[Math.floor(Math.random() * direccionesPais.length)];
         }
 
         function generarNombre() {
