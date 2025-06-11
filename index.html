@@ -61,7 +61,7 @@
             margin-bottom: 20px;
         }
 
-        input[type="text"], input[type="number"], select {
+        input[type="text"], input[type="number"], select, textarea {
             width: calc(100% - 20px);
             padding: 10px;
             border: 2px solid #00796b;
@@ -71,7 +71,7 @@
             box-sizing: border-box;
         }
 
-        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+        input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
             border-color: #004d40;
             outline: none;
         }
@@ -218,7 +218,7 @@
         </div>
 
         <div id="binLookup" class="tab">
-            <input type="text" id="binInput" placeholder="Ingrese un BIN o CC">
+            <textarea id="binInput" placeholder="Ingrese un BIN o CC (una línea por BIN)" rows="5" style="width: calc(100% - 20px);"></textarea>
             <button id="fetchButton">Buscar Datos</button>
             <button id="copyButton" style="display: none;">Copiar Resultados</button>
             <div id="result"></div>
@@ -444,14 +444,6 @@ Banco: CITIBANK, N.A.- COSTCO
 Pais: UNITED STATES
 Moneda: USD
 --------------------
-BIN: 410040
-Brand: VISA
-Tipo: CREDIT
-Nivel: BUSINESS
-Banco: CITIBANK, N.A.- COSTCO
-Pais: UNITED STATES
-Moneda: USD
---------------------
 BIN: 440066
 Brand: VISA
 Tipo: CREDIT
@@ -591,110 +583,123 @@ Moneda: AED
         `;
 
         document.getElementById('fetchButton').addEventListener('click', function() {
-            let bin = document.getElementById('binInput').value.trim();
+            const binInput = document.getElementById('binInput').value.trim();
+            const bins = binInput.split('\n').map(bin => bin.trim()).filter(bin => bin); // Dividir por líneas y eliminar espacios vacíos
 
-            // Validar que el BIN tenga al menos 6 dígitos o esté vacío
-            if (bin.length < 6 || !bin) {
-                document.getElementById('result').textContent = 'INGRESA EL PUTO BIN';
-                document.getElementById('result').classList.add('error');
+            // Limpiar resultados previos
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            // Validar que no haya más de 100 líneas
+            if (bins.length > 100) {
+                resultDiv.textContent = '¡Solo se permiten hasta 100 líneas!';
+                resultDiv.classList.add('error');
                 return;
             }
 
-            // Capturar solo los primeros 6 dígitos si el BIN es mayor a 6
-            bin = bin.substring(0, 6);
+            // Procesar cada BIN
+            bins.forEach(bin => {
+                if (bin.length < 6) {
+                    resultDiv.innerHTML += `<div class="error">BIN "${bin}" es demasiado corto.</div>`;
+                    return;
+                }
 
-            // Cambiar la URL a la que se realiza la solicitud
-            fetch('https://raw.githubusercontent.com/TheRetry404/Generator_Retry404/refs/heads/main/DATA_BASE')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Error en la red: ' + response.status);
-                    }
-                    return response.text();
-                })
-                .then(data => {
-                    // Filtrar las líneas que contienen el BIN
-                    const lines = data.split('\n');
-                    let results = {};
-                    let capture = false;
+                // Capturar solo los primeros 6 dígitos si el BIN es mayor a 6
+                const shortBin = bin.substring(0, 6);
 
-                    for (let line of lines) {
-                        if (line.includes(bin)) {
-                            capture = true; // Iniciar captura
-                        } else if (line.includes('--------------------')) {
+                // Cambiar la URL a la que se realiza la solicitud
+                fetch('https://raw.githubusercontent.com/TheRetry404/Generator_Retry404/refs/heads/main/DATA_BASE')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la red: ' + response.status);
+                        }
+                        return response.text();
+                    })
+                    .then(data => {
+                        // Filtrar las líneas que contienen el BIN
+                        const lines = data.split('\n');
+                        let results = {};
+                        let capture = false;
+
+                        for (let line of lines) {
+                            if (line.includes(shortBin)) {
+                                capture = true; // Iniciar captura
+                            } else if (line.includes('--------------------')) {
+                                if (capture) {
+                                    capture = false; // Detener captura
+                                    break; // Salir del bucle si se encuentra el delimitador
+                                }
+                            }
+
                             if (capture) {
-                                capture = false; // Detener captura
-                                break; // Salir del bucle si se encuentra el delimitador
+                                // Procesar la línea para extraer la información
+                                const [key, value] = line.split(':').map(part => part.trim());
+                                if (key && value) {
+                                    results[key.toUpperCase()] = value; // Guardar en el objeto
+                                }
                             }
                         }
 
-                        if (capture) {
-                            // Procesar la línea para extraer la información
-                            const [key, value] = line.split(':').map(part => part.trim());
-                            if (key && value) {
-                                results[key.toUpperCase()] = value; // Guardar en el objeto
-                            }
-                        }
-                    }
-
-                    // Mostrar los resultados en el formato solicitado
-                    if (Object.keys(results).length > 0) {
-                        const output = `
-CARD-» ${document.getElementById('binInput').value}
+                        // Mostrar los resultados en el formato solicitado
+                        if (Object.keys(results).length > 0) {
+                            const output = `
+CARD-» ${bin}
 BRAND-» ${results['BRAND']} - ${results['TIPO']} - ${results['NIVEL']}
 BANK-» ${results['BANCO']}
 COUNTRY-» ${results['PAIS']} - ${results['MONEDA']}
-BIN-» ${bin}
+BIN-» ${shortBin}
 BY -» RETRY404 💎
-                        `.trim();
-                        document.getElementById('result').textContent = output;
-                        document.getElementById('result').classList.remove('error');
-                        document.getElementById('copyButton').style.display = 'block'; // Mostrar botón de copiar
-                        document.getElementById('sendToTelegram').style.display = 'block'; // Mostrar botón de enviar a Telegram
-                    } else {
-                        // Si no se encuentra en la solicitud, buscar en la lista interna
-                        searchInInternalData(bin);
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('result').textContent = 'Error: ' + error.message;
-                    document.getElementById('result').classList.add('error');
-                });
+                            `.trim();
+                            resultDiv.innerHTML += `<div>${output}</div>`;
+                            resultDiv.classList.remove('error');
+                            document.getElementById('copyButton').style.display = 'block'; // Mostrar botón de copiar
+                            document.getElementById('sendToTelegram').style.display = 'block'; // Mostrar botón de enviar a Telegram
+                        } else {
+                            // Si no se encuentra en la solicitud, buscar en la lista interna
+                            searchInInternalData(shortBin, bin);
+                        }
+                    })
+                    .catch(error => {
+                        resultDiv.innerHTML += `<div class="error">Error al buscar BIN "${bin}": ${error.message}</div>`;
+                    });
+            });
         });
 
         document.getElementById('sendToTelegram').addEventListener('click', function() {
             const botToken = document.getElementById('botToken').value.trim();
             const chatId = document.getElementById('chatId').value.trim();
-            const resultText = document.getElementById('result').textContent;
+            const resultDiv = document.getElementById('result');
+            const resultLines = resultDiv.innerHTML.split('<div>').map(line => line.replace('</div>', '').trim()).filter(line => line); // Extraer líneas de resultados
 
             if (!botToken || !chatId) {
                 alert('Por favor, ingresa el Bot Token y el Chat ID.');
                 return;
             }
 
-            const message = encodeURIComponent(resultText);
-            const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${message}`;
+            // Función para enviar mensajes a Telegram con un retraso
+            async function sendMessagesWithDelay() {
+                for (const message of resultLines) {
+                    const formattedMessage = encodeURIComponent(message);
+                    const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${formattedMessage}`;
 
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Error al enviar el mensaje: ' + response.status);
+                    try {
+                        const response = await fetch(url);
+                        if (!response.ok) {
+                            throw new Error('Error al enviar el mensaje: ' + response.status);
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2 segundos
+                    } catch (error) {
+                        console.error('Error al enviar a Telegram: ', error);
+                        alert('Error al enviar a Telegram: ' + error.message);
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.ok) {
-                        alert('Resultados enviados a Telegram!');
-                    } else {
-                        alert('Error al enviar el mensaje: ' + data.description);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error al enviar a Telegram: ', error);
-                    alert('Error al enviar a Telegram: ' + error.message);
-                });
+                }
+                alert('Todos los resultados han sido enviados a Telegram!');
+            }
+
+            sendMessagesWithDelay();
         });
 
-        function searchInInternalData(bin) {
+        function searchInInternalData(bin, originalBin) {
             const internalLines = internalData.trim().split('\n');
             let results = {};
             let capture = false;
@@ -719,24 +724,20 @@ BY -» RETRY404 💎
             }
 
             // Mostrar los resultados en el formato solicitado
+            const resultDiv = document.getElementById('result');
             if (Object.keys(results).length > 0) {
                 const output = `
-CARD-» ${document.getElementById('binInput').value}
+CARD-» ${originalBin}
 BRAND-» ${results['BRAND']} - ${results['TIPO']} - ${results['NIVEL']}
 BANK-» ${results['BANCO']}
 COUNTRY-» ${results['PAIS']} - ${results['MONEDA']}
 BIN-» ${bin}
 BY -» RETRY404 💎
                 `.trim();
-                document.getElementById('result').textContent = output;
-                document.getElementById('result').classList.remove('error');
-                document.getElementById('copyButton').style.display = 'block'; // Mostrar botón de copiar
-                document.getElementById('sendToTelegram').style.display = 'block'; // Mostrar botón de enviar a Telegram
+                resultDiv.innerHTML += `<div>${output}</div>`;
+                resultDiv.classList.remove('error');
             } else {
-                document.getElementById('result').textContent = 'BIN INCORRECTO O NO ENCONTRADO (O INVENTASTE TU MIERDA DE BIN)';
-                document.getElementById('result').classList.add('error');
-                document.getElementById('copyButton').style.display = 'none'; // Ocultar botón de copiar
-                document.getElementById('sendToTelegram').style.display = 'none'; // Ocultar botón de enviar a Telegram
+                resultDiv.innerHTML += `<div class="error">BIN "${originalBin}" INCORRECTO O NO ENCONTRADO.</div>`;
             }
         }
 
